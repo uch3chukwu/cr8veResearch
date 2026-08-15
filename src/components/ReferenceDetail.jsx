@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 function ReferenceDetail({ reference, onBack }) {
   const [media, setMedia] = useState([])
   const [sources, setSources] = useState([])
+  const [notes, setNotes] = useState([])
 
   const [loading, setLoading] = useState(true)
 
@@ -16,6 +17,9 @@ function ReferenceDetail({ reference, onBack }) {
   const [sourceCreator, setSourceCreator] = useState('')
   const [sourceUrl, setSourceUrl] = useState('')
   const [sourceDescription, setSourceDescription] = useState('')
+
+  const [noteContent, setNoteContent] = useState('')
+  const [noteKind, setNoteKind] = useState('note')
 
   const [message, setMessage] = useState('')
 
@@ -60,6 +64,18 @@ function ReferenceDetail({ reference, onBack }) {
       setMessage(sourceResult.error.message)
     } else {
       setSources(sourceResult.data)
+    }
+
+    const noteResult = await supabase
+      .from('notes')
+      .select('*')
+      .eq('reference_id', reference.id)
+      .order('created_at', { ascending: true })
+
+    if (noteResult.error) {
+      setMessage(noteResult.error.message)
+    } else {
+      setNotes(noteResult.data)
     }
 
     setLoading(false)
@@ -198,6 +214,71 @@ function ReferenceDetail({ reference, onBack }) {
     setSources(function (currentSources) {
       return currentSources.filter(function (item) {
         return item.source_id !== sourceId
+      })
+    })
+  }
+
+  async function createNote(event) {
+    event.preventDefault()
+    setMessage('')
+
+    if (!noteContent.trim()) {
+      setMessage('note content is required')
+      return
+    }
+
+    const { data: userData, error: userError } = await supabase.auth.getUser()
+
+    if (userError) {
+      setMessage(userError.message)
+      return
+    }
+
+    if (!userData.user) {
+      setMessage('you must be logged in to create a note')
+      return
+    }
+
+    const { data, error } = await supabase
+      .from('notes')
+      .insert({
+        user_id: userData.user.id,
+        reference_id: reference.id,
+        content: noteContent.trim(),
+        kind: noteKind
+      })
+      .select()
+      .single()
+
+    if (error) {
+      setMessage(error.message)
+      return
+    }
+
+    setNotes(function (currentNotes) {
+      return [...currentNotes, data]
+    })
+
+    setNoteContent('')
+    setNoteKind('note')
+  }
+
+  async function deleteNote(noteId) {
+    setMessage('')
+
+    const { error } = await supabase
+      .from('notes')
+      .delete()
+      .eq('id', noteId)
+
+    if (error) {
+      setMessage(error.message)
+      return
+    }
+
+    setNotes(function (currentNotes) {
+      return currentNotes.filter(function (item) {
+        return item.id !== noteId
       })
     })
   }
@@ -406,14 +487,72 @@ function ReferenceDetail({ reference, onBack }) {
         })
       )}
 
+      <h2>NOTES</h2>
+
+      <form onSubmit={createNote}>
+        <select
+          value={noteKind}
+          onChange={function (event) {
+            setNoteKind(event.target.value)
+          }}
+        >
+          <option value="note">note</option>
+          <option value="observation">observation</option>
+          <option value="question">question</option>
+          <option value="annotation">annotation</option>
+        </select>
+
+        <textarea
+          placeholder="write a note..."
+          value={noteContent}
+          onChange={function (event) {
+            setNoteContent(event.target.value)
+          }}
+        />
+
+        <button type="submit">
+          ADD NOTE
+        </button>
+      </form>
+
+      <hr />
+
+      {notes.length === 0 ? (
+        <p>no notes yet</p>
+      ) : (
+        notes.map(function (note) {
+          return (
+            <div key={note.id}>
+              <h3>{note.kind}</h3>
+
+              <p>{note.content}</p>
+
+              <small>
+                {new Date(note.created_at).toLocaleString()}
+              </small>
+
+              <br />
+
+              <button
+                type="button"
+                onClick={function () {
+                  deleteNote(note.id)
+                }}
+              >
+                DELETE
+              </button>
+
+              <hr />
+            </div>
+          )
+        })
+      )}
+
       <h2>CREATORS</h2>
       <p>creators will go here</p>
 
       <h2>SUBJECTS</h2>
       <p>subjects will go here</p>
-
-      <h2>NOTES</h2>
-      <p>notes will go here</p>
 
       <h2>RELATIONSHIPS</h2>
       <p>relationships will go here</p>
