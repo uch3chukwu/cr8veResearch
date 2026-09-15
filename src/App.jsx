@@ -30,6 +30,17 @@ function App() {
     setLoading(false)
   }
 
+  async function signOut() {
+    const { error } = await supabase.auth.signOut()
+  
+    if (error) {
+      console.error('Error signing out:', error)
+      return
+    }
+  
+    setSelectedSpace(null)
+  }
+
   if (loading) {
     return <p>loading...</p>
   }
@@ -67,11 +78,19 @@ function App() {
   }
 
   return (
-    <ResearchSpaces
-      user={user}
-      onSelectSpace={setSelectedSpace}
-    />
-  )
-}
+    <div>
+      <button
+        type="button"
+        onClick={signOut}
+      >
+        LOG OUT
+      </button>
+  
+      <ResearchSpaces
+        user={user}
+        onSelectSpace={setSelectedSpace}
+      />
+    </div>
+  )}
 
 export default App
