@@ -1,0 +1,17 @@
+{
+  "name": "cr8veresearch-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for cr8veResearch",
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch server.js",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/node": "^2.0.0",
+    "@modelcontextprotocol/server": "^2.0.0",
+    "@supabase/supabase-js": "^2.0.0",
+    "dotenv": "^17.0.0",
+    "zod": "^4.0.0"
+  }
+}
