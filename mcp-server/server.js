@@ -2,6 +2,7 @@ import { createServer } from 'node:http'
 import { McpServer, createMcpHandler } from '@modelcontextprotocol/server'
 import { toNodeHandler } from '@modelcontextprotocol/node'
 import { z } from 'zod'
+import { searchResearch } from './lib/search.js'
 import { createUserSupabaseClient } from './lib/supabase.js'
 
 const PORT = process.env.PORT || 3001
@@ -56,6 +57,39 @@ async function getResearchSpace(supabase, spaceId) {
   }
 }
 
+async function runResearchSearch(supabase, query, limit) {
+  try {
+    const results = await searchResearch(supabase, query, limit)
+    const response = {
+      query,
+      count: results.length,
+      results
+    }
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: results.length > 0
+            ? JSON.stringify(response, null, 2)
+            : `No accessible research matched "${query}".`
+        }
+      ],
+      structuredContent: response
+    }
+  } catch {
+    return {
+      content: [
+        {
+          type: 'text',
+          text: 'Unable to search research right now.'
+        }
+      ],
+      isError: true
+    }
+  }
+}
+
 function createMcpServer(supabase) {
   const server = new McpServer({
     name: 'cr8veResearch',
@@ -86,6 +120,20 @@ function createMcpServer(supabase) {
       })
     },
     async ({ space_id: spaceId }) => getResearchSpace(supabase, spaceId)
+  )
+
+  server.registerTool(
+    'search_research',
+    {
+      description: 'Search accessible research by text',
+      inputSchema: z.object({
+        query: z.string().trim().min(1),
+        limit: z.number().int().min(1).max(20).optional()
+      })
+    },
+    async ({ query, limit = 10 }) => (
+      runResearchSearch(supabase, query, limit)
+    )
   )
 
   return server
