@@ -1,14 +1,27 @@
 import { createServer } from 'node:http'
 import { McpServer, createMcpHandler } from '@modelcontextprotocol/server'
 import { toNodeHandler } from '@modelcontextprotocol/node'
+import { createUserSupabaseClient } from './lib/supabase.js'
 
 const PORT = process.env.PORT || 3001
 
-function createCr8veServer() {
+function getBearerToken(authorization) {
+  if (typeof authorization !== 'string') {
+    return null
+  }
+
+  const match = authorization.match(/^Bearer ([^\s]+)$/i)
+  return match?.[1] ?? null
+}
+
+function createMcpServer(supabase) {
   const server = new McpServer({
     name: 'cr8veResearch',
     version: '0.1.0'
   })
+
+  // Keep the request-scoped client in this factory's closure for research tools.
+  void supabase
 
   server.registerTool(
     'ping',
@@ -28,11 +41,30 @@ function createCr8veServer() {
   return server
 }
 
-const mcpHandler = createMcpHandler(createCr8veServer)
+const mcpHandler = createMcpHandler(({ requestInfo }) => {
+  const accessToken = getBearerToken(
+    requestInfo?.headers.get('authorization')
+  )
+
+  if (!accessToken) {
+    throw new Error('Authenticated MCP request is missing a Bearer token')
+  }
+
+  return createMcpServer(createUserSupabaseClient(accessToken))
+})
 const handleMcpRequest = toNodeHandler(mcpHandler)
 
 const httpServer = createServer((req, res) => {
   if (req.url?.startsWith('/mcp')) {
+    if (!getBearerToken(req.headers.authorization)) {
+      res.writeHead(401, {
+        'Content-Type': 'application/json',
+        'WWW-Authenticate': 'Bearer'
+      })
+      res.end(JSON.stringify({ error: 'Bearer authorization required' }))
+      return
+    }
+
     handleMcpRequest(req, res)
     return
   }
