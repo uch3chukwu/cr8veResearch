@@ -37,6 +37,9 @@ function ReferenceDetail({
   const [mediaUrl, setMediaUrl] =
     useState('')
 
+  const [mediaContent, setMediaContent] =
+    useState('')
+
   const [sourceTitle, setSourceTitle] =
     useState('')
 
@@ -168,7 +171,20 @@ function ReferenceDetail({
       return
     }
 
-    if (!mediaUrl.trim()) {
+    if (
+      mediaType === 'text' &&
+      !mediaContent.trim()
+    ) {
+      setMessage(
+        'media content is required'
+      )
+      return
+    }
+
+    if (
+      mediaType !== 'text' &&
+      !mediaUrl.trim()
+    ) {
       setMessage(
         'media URL is required'
       )
@@ -184,7 +200,14 @@ function ReferenceDetail({
         reference_id: reference.id,
         media_type: mediaType,
         title: mediaTitle.trim(),
-        url: mediaUrl.trim(),
+        url:
+          mediaType === 'text'
+            ? null
+            : mediaUrl.trim(),
+        content:
+          mediaType === 'text'
+            ? mediaContent.trim()
+            : null,
         position: media.length
       })
       .select()
@@ -206,6 +229,7 @@ function ReferenceDetail({
 
     setMediaTitle('')
     setMediaUrl('')
+    setMediaContent('')
     setMediaType('link')
   }
 
@@ -602,18 +626,32 @@ function ReferenceDetail({
             }}
           />
 
-          <input
-            type="text"
-            placeholder="media URL"
-            value={mediaUrl}
-            onChange={function (
-              event
-            ) {
-              setMediaUrl(
-                event.target.value
-              )
-            }}
-          />
+          {mediaType === 'text' ? (
+            <textarea
+              placeholder="media content"
+              value={mediaContent}
+              onChange={function (
+                event
+              ) {
+                setMediaContent(
+                  event.target.value
+                )
+              }}
+            />
+          ) : (
+            <input
+              type="text"
+              placeholder="media URL"
+              value={mediaUrl}
+              onChange={function (
+                event
+              ) {
+                setMediaUrl(
+                  event.target.value
+                )
+              }}
+            />
+          )}
 
           <button type="submit">
             ADD MEDIA
@@ -644,7 +682,14 @@ function ReferenceDetail({
                       </h3>
 
                       {item.media_type ===
-                      'image' ? (
+                      'text' ? (
+                        <p className="media-text-content">
+                          {item.content?.trim()
+                            ? item.content
+                            : 'Text content unavailable.'}
+                        </p>
+                      ) : item.media_type ===
+                        'image' ? (
                         <img
                           src={item.url}
                           alt={item.title}
