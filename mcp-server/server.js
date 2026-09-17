@@ -1,6 +1,7 @@
 import { createServer } from 'node:http'
 import { McpServer, createMcpHandler } from '@modelcontextprotocol/server'
 import { toNodeHandler } from '@modelcontextprotocol/node'
+import { z } from 'zod'
 import { createUserSupabaseClient } from './lib/supabase.js'
 
 const PORT = process.env.PORT || 3001
@@ -14,14 +15,52 @@ function getBearerToken(authorization) {
   return match?.[1] ?? null
 }
 
+async function getResearchSpace(supabase, spaceId) {
+  const { data, error } = await supabase
+    .from('research_spaces')
+    .select('id, title, description, created_at, updated_at')
+    .eq('id', spaceId)
+    .maybeSingle()
+
+  if (error) {
+    return {
+      content: [
+        {
+          type: 'text',
+          text: 'Unable to retrieve the research space.'
+        }
+      ],
+      isError: true
+    }
+  }
+
+  if (!data) {
+    return {
+      content: [
+        {
+          type: 'text',
+          text: 'No accessible research space was found for that ID.'
+        }
+      ]
+    }
+  }
+
+  return {
+    content: [
+      {
+        type: 'text',
+        text: JSON.stringify(data, null, 2)
+      }
+    ],
+    structuredContent: data
+  }
+}
+
 function createMcpServer(supabase) {
   const server = new McpServer({
     name: 'cr8veResearch',
     version: '0.1.0'
   })
-
-  // Keep the request-scoped client in this factory's closure for research tools.
-  void supabase
 
   server.registerTool(
     'ping',
@@ -36,6 +75,17 @@ function createMcpServer(supabase) {
         }
       ]
     })
+  )
+
+  server.registerTool(
+    'get_research_space',
+    {
+      description: 'Get one accessible research space by ID',
+      inputSchema: z.object({
+        space_id: z.string()
+      })
+    },
+    async ({ space_id: spaceId }) => getResearchSpace(supabase, spaceId)
   )
 
   return server
