@@ -2,6 +2,7 @@ import { createServer } from 'node:http'
 import { McpServer, createMcpHandler } from '@modelcontextprotocol/server'
 import { toNodeHandler } from '@modelcontextprotocol/node'
 import { z } from 'zod'
+import { loadReference } from './lib/reference.js'
 import { searchResearch } from './lib/search.js'
 import { createUserSupabaseClient } from './lib/supabase.js'
 
@@ -54,6 +55,43 @@ async function getResearchSpace(supabase, spaceId) {
       }
     ],
     structuredContent: data
+  }
+}
+
+async function getReference(supabase, referenceId) {
+  try {
+    const reference = await loadReference(supabase, referenceId)
+
+    if (!reference) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: 'No accessible reference was found for that ID.'
+          }
+        ]
+      }
+    }
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(reference, null, 2)
+        }
+      ],
+      structuredContent: reference
+    }
+  } catch {
+    return {
+      content: [
+        {
+          type: 'text',
+          text: 'Unable to retrieve the reference.'
+        }
+      ],
+      isError: true
+    }
   }
 }
 
@@ -120,6 +158,19 @@ function createMcpServer(supabase) {
       })
     },
     async ({ space_id: spaceId }) => getResearchSpace(supabase, spaceId)
+  )
+
+  server.registerTool(
+    'get_reference',
+    {
+      description: 'Get one accessible reference and its related research',
+      inputSchema: z.object({
+        reference_id: z.string().uuid()
+      })
+    },
+    async ({ reference_id: referenceId }) => (
+      getReference(supabase, referenceId)
+    )
   )
 
   server.registerTool(
