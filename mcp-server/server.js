@@ -2,6 +2,7 @@ import { createServer } from 'node:http'
 import { McpServer, createMcpHandler } from '@modelcontextprotocol/server'
 import { toNodeHandler } from '@modelcontextprotocol/node'
 import { z } from 'zod'
+import { createNoteInputSchema, runCreateNote } from './lib/note.js'
 import { loadReference } from './lib/reference.js'
 import { searchResearch } from './lib/search.js'
 import { createUserSupabaseClient } from './lib/supabase.js'
@@ -171,6 +172,15 @@ function createMcpServer(supabase) {
     async ({ reference_id: referenceId }) => (
       getReference(supabase, referenceId)
     )
+  )
+
+  server.registerTool(
+    'create_note',
+    {
+      description: 'Create one note in accessible research',
+      inputSchema: createNoteInputSchema
+    },
+    async (input) => runCreateNote(supabase, input)
   )
 
   server.registerTool(
