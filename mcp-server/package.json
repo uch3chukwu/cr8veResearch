@@ -8,6 +8,7 @@
     "start": "node server.js"
   },
   "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.1142.0",
     "@modelcontextprotocol/node": "^2.0.0",
     "@modelcontextprotocol/server": "^2.0.0",
     "@supabase/supabase-js": "^2.0.0",

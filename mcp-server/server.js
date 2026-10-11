@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { createNoteInputSchema, runCreateNote } from './lib/note.js'
 import { loadReference } from './lib/reference.js'
 import { searchResearch } from './lib/search.js'
+import { loadResearchSpace } from './lib/space.js'
 import { createUserSupabaseClient } from './lib/supabase.js'
 
 const PORT = process.env.PORT || 3001
@@ -19,13 +20,11 @@ function getBearerToken(authorization) {
 }
 
 async function getResearchSpace(supabase, spaceId) {
-  const { data, error } = await supabase
-    .from('research_spaces')
-    .select('id, title, description, created_at, updated_at')
-    .eq('id', spaceId)
-    .maybeSingle()
+  let data
 
-  if (error) {
+  try {
+    data = await loadResearchSpace(supabase, spaceId)
+  } catch {
     return {
       content: [
         {
