@@ -1,7 +1,7 @@
 import { Buffer } from 'node:buffer'
 import { z } from 'zod'
 
-import { createBedrockModel } from '../agent/bedrock-model.js'
+import { createResearchModel } from '../agent/model.js'
 import { runResearchAgent } from '../agent/run.js'
 
 const AGENT_MESSAGE_MAX_LENGTH = 4000
@@ -48,8 +48,10 @@ async function readJsonBody(req) {
 export function createHttpRequestHandler({
   handleMcpRequest,
   createSupabaseClient,
-  createModel = createBedrockModel,
+  createModel = createResearchModel,
   runAgent = runResearchAgent,
+  allowedAgentOrigin = globalThis.process?.env.AGENT_ALLOWED_ORIGIN ||
+    'http://localhost:5173',
   logger = console
 }) {
   return async function handleHttpRequest(req, res) {
@@ -68,7 +70,38 @@ export function createHttpRequestHandler({
       return
     }
 
-    if (req.url === '/agent' && req.method === 'POST') {
+    if (req.url === '/agent') {
+      const origin = req.headers.origin
+      const hasAllowedOrigin = !origin || origin === allowedAgentOrigin
+      const corsHeaders = origin && hasAllowedOrigin
+        ? {
+            'Access-Control-Allow-Origin': origin,
+            'Access-Control-Allow-Credentials': 'true',
+            Vary: 'Origin'
+          }
+        : {}
+
+      if (!hasAllowedOrigin) {
+        sendJson(res, 403, { error: 'Origin is not allowed' })
+        return
+      }
+
+      if (req.method === 'OPTIONS') {
+        res.writeHead(204, {
+          ...corsHeaders,
+          'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS'
+        })
+        res.end()
+        return
+      }
+
+      if (req.method !== 'POST') {
+        res.writeHead(404)
+        res.end('Not found')
+        return
+      }
+
       const accessToken = getBearerToken(req.headers.authorization)
 
       if (!accessToken) {
@@ -76,7 +109,10 @@ export function createHttpRequestHandler({
           res,
           401,
           { error: 'Bearer authorization required' },
-          { 'WWW-Authenticate': 'Bearer' }
+          {
+            ...corsHeaders,
+            'WWW-Authenticate': 'Bearer'
+          }
         )
         return
       }
@@ -86,7 +122,12 @@ export function createHttpRequestHandler({
       try {
         input = agentRequestSchema.parse(await readJsonBody(req))
       } catch {
-        sendJson(res, 400, { error: 'A valid message is required' })
+        sendJson(
+          res,
+          400,
+          { error: 'A valid message is required' },
+          corsHeaders
+        )
         return
       }
 
@@ -97,11 +138,21 @@ export function createHttpRequestHandler({
         const { data, error } = await supabase.auth.getUser()
 
         if (error || !data.user) {
-          sendJson(res, 401, { error: 'Authentication failed' })
+          sendJson(
+            res,
+            401,
+            { error: 'Authentication failed' },
+            corsHeaders
+          )
           return
         }
       } catch {
-        sendJson(res, 401, { error: 'Authentication failed' })
+        sendJson(
+          res,
+          401,
+          { error: 'Authentication failed' },
+          corsHeaders
+        )
         return
       }
 
@@ -112,10 +163,15 @@ export function createHttpRequestHandler({
           message: input.message
         })
 
-        sendJson(res, 200, { answer })
+        sendJson(res, 200, { answer }, corsHeaders)
       } catch (error) {
         logger.error('Research agent request failed', error)
-        sendJson(res, 503, { error: 'Research agent is unavailable' })
+        sendJson(
+          res,
+          503,
+          { error: 'Research agent is unavailable' },
+          corsHeaders
+        )
       }
 
       return

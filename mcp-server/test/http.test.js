@@ -35,6 +35,7 @@ async function request(handler, {
   method = 'POST',
   path = '/agent',
   authorization = `Bearer ${ACCESS_TOKEN}`,
+  origin,
   body
 } = {}) {
   const server = createServer(handler)
@@ -45,12 +46,11 @@ async function request(handler, {
     const address = server.address()
     const response = await fetch(`http://127.0.0.1:${address.port}${path}`, {
       method,
-      headers: authorization === null
-        ? { 'Content-Type': 'application/json' }
-        : {
-            Authorization: authorization,
-            'Content-Type': 'application/json'
-          },
+      headers: {
+        ...(authorization === null ? {} : { Authorization: authorization }),
+        ...(origin === undefined ? {} : { Origin: origin }),
+        'Content-Type': 'application/json'
+      },
       body: body === undefined ? undefined : JSON.stringify(body)
     })
     const text = await response.text()
@@ -279,4 +279,34 @@ test('preserves MCP Bearer authentication', async () => {
   assert.equal(response.status, 401)
   assert.deepEqual(response.body, { error: 'Bearer authorization required' })
   assert.equal(calls, 0)
+})
+
+test('allows CORS preflight from the configured frontend origin', async () => {
+  const { handler } = createHandler()
+  const response = await request(handler, {
+    method: 'OPTIONS',
+    origin: 'http://localhost:5173'
+  })
+
+  assert.equal(response.status, 204)
+  assert.equal(
+    response.headers.get('access-control-allow-origin'),
+    'http://localhost:5173'
+  )
+  assert.equal(
+    response.headers.get('access-control-allow-headers'),
+    'Authorization, Content-Type'
+  )
+})
+
+test('rejects agent requests from an unconfigured origin', async () => {
+  const { handler } = createHandler()
+  const response = await request(handler, {
+    origin: 'https://untrusted.example',
+    body: { message: 'Question.' }
+  })
+
+  assert.equal(response.status, 403)
+  assert.deepEqual(response.body, { error: 'Origin is not allowed' })
+  assert.equal(response.headers.get('access-control-allow-origin'), null)
 })

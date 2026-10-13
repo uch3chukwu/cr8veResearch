@@ -2,7 +2,7 @@ import { createServer } from 'node:http'
 import { McpServer, createMcpHandler } from '@modelcontextprotocol/server'
 import { toNodeHandler } from '@modelcontextprotocol/node'
 import { z } from 'zod'
-import { createBedrockModel } from './agent/bedrock-model.js'
+import { createResearchModel } from './agent/model.js'
 import { createNoteInputSchema, runCreateNote } from './lib/note.js'
 import { createHttpRequestHandler } from './lib/http.js'
 import { loadReference } from './lib/reference.js'
@@ -217,7 +217,7 @@ const handleMcpRequest = toNodeHandler(mcpHandler)
 const httpServer = createServer(createHttpRequestHandler({
   handleMcpRequest,
   createSupabaseClient: createUserSupabaseClient,
-  createModel: createBedrockModel
+  createModel: createResearchModel
 }))
 
 httpServer.listen(PORT, () => {
