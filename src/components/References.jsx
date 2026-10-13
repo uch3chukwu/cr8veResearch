@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import ReferenceDetail from './ReferenceDetail'
 
-function References({ user, space }) {
+function References({ user, space, onBack }) {
   const [references, setReferences] = useState([])
 
   const [loading, setLoading] = useState(true)
@@ -206,9 +206,7 @@ function References({ user, space }) {
           <button
             type="button"
             className="references-back"
-            onClick={function () {
-              window.history.back()
-            }}
+            onClick={onBack}
           >
             ← RESEARCH SPACES
           </button>

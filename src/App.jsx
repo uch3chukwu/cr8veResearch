@@ -68,29 +68,13 @@ function App() {
     content = <AgentView />
   } else if (selectedSpace) {
     content = (
-      <div>
-        <button
-          type="button"
-          onClick={function () {
-            setSelectedSpace(null)
-          }}
-        >
-          BACK TO RESEARCH SPACES
-        </button>
-
-        <h1>{selectedSpace.title}</h1>
-
-        {selectedSpace.description && (
-          <p>{selectedSpace.description}</p>
-        )}
-
-        <hr />
-
-        <References
-          user={user}
-          space={selectedSpace}
-        />
-      </div>
+      <References
+        user={user}
+        space={selectedSpace}
+        onBack={function () {
+          setSelectedSpace(null)
+        }}
+      />
     )
   } else {
     content = (

@@ -67,6 +67,10 @@ body {
   backdrop-filter: blur(12px);
 }
 
+.app-navigation > * {
+  min-width: 0;
+}
+
 .app-navigation button {
   padding: 0 20px;
   border-right: 1px solid var(--line);
@@ -95,6 +99,7 @@ body {
 
 .agent-workspace {
   min-height: calc(100svh - 54px);
+  min-width: 0;
   padding: 64px var(--page-x) 88px;
 }
 
@@ -114,7 +119,9 @@ body {
 
 .agent-header h1 {
   max-width: 850px;
+  min-width: 0;
   grid-column: 1;
+  overflow-wrap: anywhere;
 }
 
 .agent-header p {
@@ -124,6 +131,7 @@ body {
   color: #aaa79f;
   font-size: 0.94rem;
   line-height: 1.8;
+  overflow-wrap: anywhere;
 }
 
 .agent-independence-note {
@@ -135,6 +143,7 @@ body {
   font-size: 0.63rem;
   letter-spacing: 0.025em;
   line-height: 1.7;
+  overflow-wrap: anywhere;
 }
 
 .agent-conversation {
@@ -166,6 +175,7 @@ body {
   font-size: clamp(1.15rem, 2vw, 1.45rem);
   letter-spacing: -0.015em;
   text-transform: none;
+  overflow-wrap: anywhere;
 }
 
 .agent-empty p {
@@ -173,6 +183,7 @@ body {
   margin-top: 10px;
   color: #aaa79f;
   line-height: 1.7;
+  overflow-wrap: anywhere;
 }
 
 .agent-empty-prompts {
@@ -190,6 +201,7 @@ body {
   color: #9d9a92;
   font-size: 0.78rem;
   line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 .agent-exchange {
@@ -200,6 +212,7 @@ body {
 
 .agent-question,
 .agent-answer {
+  min-width: 0;
   padding: 34px 0 38px;
 }
 
@@ -261,6 +274,7 @@ body {
 
 .agent-error p {
   color: #c7a39d;
+  overflow-wrap: anywhere;
 }
 
 .agent-composer {
@@ -280,6 +294,10 @@ body {
   border-bottom: 1px solid var(--line);
 }
 
+.agent-composer-heading > div {
+  min-width: 0;
+}
+
 .agent-composer-heading label,
 .agent-composer-heading > span {
   color: #a7a49b;
@@ -293,6 +311,7 @@ body {
   color: #77746d;
   font-size: 0.74rem;
   line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 .agent-composer-heading > span {
@@ -398,6 +417,8 @@ body {
   }
 
   .agent-composer-heading {
+    align-items: flex-start;
+    flex-wrap: wrap;
     gap: 12px;
   }
 
@@ -408,6 +429,27 @@ body {
   .agent-composer-footer button {
     width: 100%;
     border-left: 0;
+  }
+}
+
+@media (max-width: 400px) {
+  :root {
+    --page-x: 14px;
+  }
+
+  .app-navigation button {
+    padding-inline: 10px;
+    font-size: 0.58rem;
+    letter-spacing: 0.07em;
+  }
+
+  .agent-workspace {
+    padding-top: 32px;
+  }
+
+  .agent-composer textarea {
+    min-height: 118px;
+    padding: 18px 14px;
   }
 }
 
@@ -610,6 +652,7 @@ select:focus-visible {
 
 .reference-heading h1 {
   max-width: 950px;
+  overflow-wrap: anywhere;
 }
 
 .reference-heading p {
@@ -619,6 +662,7 @@ select:focus-visible {
   color: var(--text-muted);
   font-size: 1rem;
   line-height: 1.7;
+  overflow-wrap: anywhere;
 }
 
 /* =================================
@@ -753,6 +797,7 @@ select:focus-visible {
   color: var(--text-muted);
   font-size: 0.88rem;
   line-height: 1.6;
+  overflow-wrap: anywhere;
 }
 
 /* =================================
@@ -1038,6 +1083,7 @@ select:focus-visible {
   color: var(--text-muted);
   font-size: 0.83rem;
   line-height: 1.65;
+  overflow-wrap: anywhere;
 }
 
 .source-item a {
@@ -1086,6 +1132,7 @@ select:focus-visible {
   line-height: 1.8;
 
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .note-item small {
@@ -1219,8 +1266,35 @@ button h4 + p {
   }
 
   .reference-view-button {
+    min-width: 0;
     min-height: 52px;
     padding-inline: 15px;
+  }
+
+  .reference-view-nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: grid;
+    overflow-x: visible;
+  }
+
+  .reference-view-button {
+    width: 100%;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .reference-view-button:nth-child(2n) {
+    border-right: 0;
+  }
+
+  .reference-view-button:last-child {
+    grid-column: 1 / -1;
+    border-bottom: 0;
+  }
+
+  .reference-view-button span,
+  .reference-view-button small {
+    min-width: 0;
   }
 
   .reference-view {
@@ -1290,13 +1364,14 @@ button h4 + p {
 
 .research-spaces {
   min-height: 100svh;
+  min-width: 0;
   padding: 28px var(--page-x) 100px;
   text-align: left;
 }
 
 .spaces-header {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 48px;
   padding-bottom: 64px;
   border-bottom: 1px solid var(--line);
@@ -1314,6 +1389,7 @@ button h4 + p {
 
 .spaces-header h1 {
   max-width: 800px;
+  overflow-wrap: anywhere;
 }
 
 .spaces-header p {
@@ -1323,6 +1399,7 @@ button h4 + p {
   color: var(--text-muted);
   font-size: 0.9rem;
   line-height: 1.7;
+  overflow-wrap: anywhere;
 }
 
 .spaces-meta {
@@ -1417,7 +1494,7 @@ button h4 + p {
 
 .space-form {
   display: grid;
-  grid-template-columns: 1fr 1.4fr auto;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto;
   gap: 8px;
 }
 
@@ -1429,6 +1506,10 @@ button h4 + p {
   font-family: var(--mono);
   font-size: 0.58rem;
   letter-spacing: 0.09em;
+}
+
+.space-field {
+  min-width: 0;
 }
 
 .space-field input,
@@ -1497,7 +1578,7 @@ button h4 + p {
 
 .spaces-index-heading {
   display: grid;
-  grid-template-columns: 72px 1fr 120px 110px 28px;
+  grid-template-columns: 72px minmax(0, 1fr) 120px 110px 28px;
   gap: 20px;
 
   min-height: 44px;
@@ -1516,7 +1597,7 @@ button h4 + p {
   position: relative;
 
   display: grid;
-  grid-template-columns: 72px 1fr 120px 110px 28px;
+  grid-template-columns: 72px minmax(0, 1fr) 120px 110px 28px;
   gap: 20px;
   align-items: center;
 
@@ -1562,6 +1643,7 @@ button h4 + p {
   font-size: 1.02rem;
   letter-spacing: -0.01em;
   text-transform: none;
+  overflow-wrap: anywhere;
 }
 
 .space-main p {
@@ -1575,6 +1657,7 @@ button h4 + p {
 
   text-overflow: ellipsis;
   white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .space-arrow {
@@ -1631,6 +1714,7 @@ button h4 + p {
 .spaces-empty p {
   color: var(--text-muted);
   font-size: 0.78rem;
+  overflow-wrap: anywhere;
 }
 
 .spaces-empty button {
@@ -1700,7 +1784,7 @@ button h4 + p {
   }
 
   .spaces-index-heading {
-    grid-template-columns: 48px 1fr 28px;
+    grid-template-columns: 40px minmax(0, 1fr) 20px;
   }
 
   .spaces-index-heading > span:nth-child(3),
@@ -1709,17 +1793,49 @@ button h4 + p {
   }
 
   .space-row {
-    grid-template-columns: 48px 1fr 28px;
-    gap: 12px;
+    grid-template-columns: 40px minmax(0, 1fr) 20px;
+    grid-template-areas:
+      "number main arrow"
+      ". visibility arrow"
+      ". date arrow";
+    gap: 5px 10px;
+    min-height: 0;
+    padding-block: 22px;
   }
 
-  .space-visibility,
+  .space-number {
+    grid-area: number;
+    align-self: start;
+    padding-top: 3px;
+  }
+
+  .space-main {
+    grid-area: main;
+  }
+
+  .space-main p {
+    display: -webkit-box;
+    white-space: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .space-visibility {
+    grid-area: visibility;
+    margin-top: 5px;
+  }
+
   .space-date {
-    display: none;
+    grid-area: date;
+  }
+
+  .space-arrow {
+    grid-area: arrow;
+    align-self: center;
   }
 
   .spaces-empty {
-    grid-template-columns: 48px 1fr;
+    grid-template-columns: 40px minmax(0, 1fr);
   }
 
   .spaces-empty button {
@@ -1737,13 +1853,14 @@ button h4 + p {
 
 .references-page {
   min-height: 100svh;
+  min-width: 0;
   padding: 28px var(--page-x) 70px;
   text-align: left;
 }
 
 .references-header {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 48px;
 
   padding-bottom: 56px;
@@ -1757,7 +1874,7 @@ button h4 + p {
   margin: 0 0 34px;
 
   background: transparent;
-  color: var(--text-muted);
+  color: #9a978f;
 
   font-family: var(--mono);
   font-size: 0.62rem;
@@ -1774,9 +1891,14 @@ button h4 + p {
   max-width: 650px;
   margin-top: 20px;
 
-  color: var(--text-muted);
+  color: #aaa69d;
   font-size: 0.88rem;
   line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.references-header h1 {
+  overflow-wrap: anywhere;
 }
 
 .references-total {
@@ -1813,7 +1935,7 @@ button h4 + p {
 
 .references-toolbar {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 32px;
 
@@ -1828,6 +1950,7 @@ button h4 + p {
   gap: 18px;
 
   max-width: 620px;
+  min-width: 0;
 }
 
 .references-search span {
@@ -1841,6 +1964,7 @@ button h4 + p {
 }
 
 .references-search input {
+  min-width: 0;
   min-height: 38px;
 
   padding: 8px 0;
@@ -1887,7 +2011,7 @@ button h4 + p {
 
 .reference-create-form {
   display: grid;
-  grid-template-columns: 1fr 1.4fr auto;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto;
   gap: 8px;
 
   margin-top: 28px;
@@ -1902,6 +2026,10 @@ button h4 + p {
   font-family: var(--mono);
   font-size: 0.57rem;
   letter-spacing: 0.08em;
+}
+
+.reference-field {
+  min-width: 0;
 }
 
 .reference-field input,
@@ -1952,7 +2080,7 @@ button h4 + p {
 
 .references-index-heading {
   display: grid;
-  grid-template-columns: 72px 1fr 100px 28px;
+  grid-template-columns: 72px minmax(0, 1fr) 100px 28px;
   gap: 20px;
 
   min-height: 44px;
@@ -1969,7 +2097,7 @@ button h4 + p {
 
 .reference-row {
   display: grid;
-  grid-template-columns: 72px 1fr 100px 28px;
+  grid-template-columns: 72px minmax(0, 1fr) 100px 28px;
   gap: 20px;
   align-items: center;
 
@@ -2017,6 +2145,7 @@ button h4 + p {
 
   letter-spacing: -0.01em;
   text-transform: none;
+  overflow-wrap: anywhere;
 }
 
 .reference-main p {
@@ -2031,6 +2160,7 @@ button h4 + p {
 
   text-overflow: ellipsis;
   white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .reference-arrow {
@@ -2089,6 +2219,7 @@ button h4 + p {
   color: var(--text-muted);
 
   font-size: 0.78rem;
+  overflow-wrap: anywhere;
 }
 
 .references-empty button {
@@ -2165,7 +2296,7 @@ button h4 + p {
   }
 
   .references-index-heading {
-    grid-template-columns: 48px 1fr 28px;
+    grid-template-columns: 40px minmax(0, 1fr) 20px;
   }
 
   .references-index-heading
@@ -2174,16 +2305,44 @@ button h4 + p {
   }
 
   .reference-row {
-    grid-template-columns: 48px 1fr 28px;
-    gap: 12px;
+    grid-template-columns: 40px minmax(0, 1fr) 20px;
+    grid-template-areas:
+      "number main arrow"
+      ". date arrow";
+    gap: 6px 10px;
+    min-height: 0;
+    padding-block: 22px;
+  }
+
+  .reference-number {
+    grid-area: number;
+    align-self: start;
+    padding-top: 3px;
+  }
+
+  .reference-main {
+    grid-area: main;
+  }
+
+  .reference-main p {
+    display: -webkit-box;
+    white-space: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
   }
 
   .reference-date {
-    display: none;
+    grid-area: date;
+    margin-top: 3px;
+  }
+
+  .reference-arrow {
+    grid-area: arrow;
+    align-self: center;
   }
 
   .references-empty {
-    grid-template-columns: 48px 1fr;
+    grid-template-columns: 40px minmax(0, 1fr);
   }
 
   .references-empty button {
