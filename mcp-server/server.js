@@ -2,13 +2,15 @@ import { createServer } from 'node:http'
 import { McpServer, createMcpHandler } from '@modelcontextprotocol/server'
 import { toNodeHandler } from '@modelcontextprotocol/node'
 import { z } from 'zod'
+import { createBedrockModel } from './agent/bedrock-model.js'
 import { createNoteInputSchema, runCreateNote } from './lib/note.js'
+import { createHttpRequestHandler } from './lib/http.js'
 import { loadReference } from './lib/reference.js'
 import { searchResearch } from './lib/search.js'
 import { loadResearchSpace } from './lib/space.js'
 import { createUserSupabaseClient } from './lib/supabase.js'
 
-const PORT = process.env.PORT || 3001
+const PORT = globalThis.process.env.PORT || 3001
 
 function getBearerToken(authorization) {
   if (typeof authorization !== 'string') {
@@ -212,36 +214,11 @@ const mcpHandler = createMcpHandler(({ requestInfo }) => {
 })
 const handleMcpRequest = toNodeHandler(mcpHandler)
 
-const httpServer = createServer((req, res) => {
-  if (req.url?.startsWith('/mcp')) {
-    if (!getBearerToken(req.headers.authorization)) {
-      res.writeHead(401, {
-        'Content-Type': 'application/json',
-        'WWW-Authenticate': 'Bearer'
-      })
-      res.end(JSON.stringify({ error: 'Bearer authorization required' }))
-      return
-    }
-
-    handleMcpRequest(req, res)
-    return
-  }
-
-  if (req.url === '/' && req.method === 'GET') {
-    res.writeHead(200, { 'Content-Type': 'application/json' })
-    res.end(
-      JSON.stringify({
-        name: 'cr8veResearch MCP',
-        status: 'online',
-        endpoint: '/mcp'
-      })
-    )
-    return
-  }
-
-  res.writeHead(404)
-  res.end('Not found')
-})
+const httpServer = createServer(createHttpRequestHandler({
+  handleMcpRequest,
+  createSupabaseClient: createUserSupabaseClient,
+  createModel: createBedrockModel
+}))
 
 httpServer.listen(PORT, () => {
   console.log(`cr8veResearch MCP running on http://localhost:${PORT}`)
