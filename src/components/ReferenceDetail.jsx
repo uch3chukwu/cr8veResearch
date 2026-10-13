@@ -4,11 +4,13 @@ import {
 } from 'react'
 
 import { supabase } from '../lib/supabase'
+import { getReferenceBackLabel } from '../lib/reference-navigation'
 import ReferenceViewNav from './ReferenceViewNav'
 
 function ReferenceDetail({
   reference,
-  onBack
+  onBack,
+  backLabel = getReferenceBackLabel('research')
 }) {
   const [activeView, setActiveView] =
     useState('overview')
@@ -479,85 +481,67 @@ function ReferenceDetail({
   }
 
   function renderOverview() {
+    const featuredMedia = media[0]
+    const featuredNote = notes[0]
+    const featuredSource = sources[0]?.sources
+    const hasOverviewContent = Boolean(
+      featuredMedia || featuredNote || featuredSource
+    )
+
     return (
       <section className="reference-overview">
-        <div>
-          <span>
-            MEDIA
-          </span>
+        <header>
+          <span>REFERENCE / OVERVIEW</span>
+          <h2>Material in focus</h2>
+          <p>
+            A concise view of the latest material attached to this reference.
+          </p>
+        </header>
 
-          <strong>
-            {media.length}
-          </strong>
+        {hasOverviewContent ? (
+          <div className="reference-overview-list">
+            {featuredMedia && (
+              <article>
+                <span>MEDIA / {featuredMedia.media_type}</span>
+                <h3>{featuredMedia.title}</h3>
+                {featuredMedia.media_type === 'text' && featuredMedia.content && (
+                  <p>{featuredMedia.content}</p>
+                )}
+                <button type="button" onClick={() => setActiveView('media')}>
+                  VIEW MEDIA →
+                </button>
+              </article>
+            )}
 
-          <button
-            type="button"
-            onClick={function () {
-              setActiveView('media')
-            }}
-          >
-            VIEW MEDIA →
-          </button>
-        </div>
+            {featuredNote && (
+              <article>
+                <span>RECENT {featuredNote.kind || 'NOTE'}</span>
+                <p>{featuredNote.content}</p>
+                <button type="button" onClick={() => setActiveView('notes')}>
+                  VIEW NOTES →
+                </button>
+              </article>
+            )}
 
-        <div>
-          <span>
-            SOURCES
-          </span>
-
-          <strong>
-            {sources.length}
-          </strong>
-
-          <button
-            type="button"
-            onClick={function () {
-              setActiveView('sources')
-            }}
-          >
-            VIEW SOURCES →
-          </button>
-        </div>
-
-        <div>
-          <span>
-            NOTES
-          </span>
-
-          <strong>
-            {notes.length}
-          </strong>
-
-          <button
-            type="button"
-            onClick={function () {
-              setActiveView('notes')
-            }}
-          >
-            VIEW NOTES →
-          </button>
-        </div>
-
-        <div>
-          <span>
-            CONNECTIONS
-          </span>
-
-          <strong>
-            0
-          </strong>
-
-          <button
-            type="button"
-            onClick={function () {
-              setActiveView(
-                'connections'
-              )
-            }}
-          >
-            VIEW CONNECTIONS →
-          </button>
-        </div>
+            {featuredSource && (
+              <article>
+                <span>SOURCE / {featuredSource.source_type}</span>
+                <h3>{featuredSource.title}</h3>
+                {featuredSource.creator && <p>{featuredSource.creator}</p>}
+                <button type="button" onClick={() => setActiveView('sources')}>
+                  VIEW SOURCES →
+                </button>
+              </article>
+            )}
+          </div>
+        ) : (
+          <div className="reference-overview-empty">
+            <span>NO MATERIAL ATTACHED</span>
+            <p>
+              Add media, a source, or a note to begin developing this reference.
+            </p>
+          </div>
+        )}
       </section>
     )
   }
@@ -1116,7 +1100,7 @@ function ReferenceDetail({
           onClick={onBack}
           className="reference-back"
         >
-          ← BACK TO REFERENCES
+          {backLabel}
         </button>
 
         <div className="reference-heading">
@@ -1135,33 +1119,6 @@ function ReferenceDetail({
           )}
         </div>
 
-        <div className="reference-stats">
-          <div>
-            <span>MEDIA</span>
-            <strong>
-              {media.length}
-            </strong>
-          </div>
-
-          <div>
-            <span>SOURCES</span>
-            <strong>
-              {sources.length}
-            </strong>
-          </div>
-
-          <div>
-            <span>NOTES</span>
-            <strong>
-              {notes.length}
-            </strong>
-          </div>
-
-          <div>
-            <span>CONNECTIONS</span>
-            <strong>0</strong>
-          </div>
-        </div>
       </header>
 
       {message && (

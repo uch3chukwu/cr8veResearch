@@ -1,14 +1,25 @@
-import { useState } from 'react'
-
 import { askResearchAgent } from '../lib/agent'
+import { mergeAgentSession } from '../lib/agent-session'
+import { getReferenceBackLabel } from '../lib/reference-navigation'
 import { supabase } from '../lib/supabase'
+import AgentResponse from './AgentResponse'
+import ReferenceDetail from './ReferenceDetail'
 
-function AgentView() {
-  const [question, setQuestion] = useState('')
-  const [exchanges, setExchanges] = useState([])
-  const [pendingQuestion, setPendingQuestion] = useState('')
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+function AgentView({ userId, session, setSession }) {
+  const {
+    question,
+    exchanges,
+    pendingQuestion,
+    error,
+    loading,
+    selectedReference
+  } = session
+
+  function updateSession(changes) {
+    setSession((currentSession) => (
+      mergeAgentSession(currentSession, changes)
+    ))
+  }
 
   async function submitQuestion(event) {
     event.preventDefault()
@@ -19,9 +30,11 @@ function AgentView() {
       return
     }
 
-    setLoading(true)
-    setPendingQuestion(submittedQuestion)
-    setError('')
+    updateSession({
+      loading: true,
+      pendingQuestion: submittedQuestion,
+      error: ''
+    })
 
     try {
       const { data, error: sessionError } = await supabase.auth.getSession()
@@ -36,24 +49,28 @@ function AgentView() {
         accessToken
       })
 
-      setExchanges((currentExchanges) => [
-        ...currentExchanges,
-        {
-          id: globalThis.crypto.randomUUID(),
-          question: submittedQuestion,
-          answer
-        }
-      ])
-      setQuestion('')
+      setSession((currentSession) => mergeAgentSession(currentSession, {
+        exchanges: [
+          ...currentSession.exchanges,
+          {
+            id: globalThis.crypto.randomUUID(),
+            question: submittedQuestion,
+            answer
+          }
+        ],
+        question: ''
+      }))
     } catch (requestError) {
-      setError(
-        requestError instanceof Error
+      updateSession({
+        error: requestError instanceof Error
           ? requestError.message
           : 'Unable to reach the research agent.'
-      )
+      })
     } finally {
-      setLoading(false)
-      setPendingQuestion('')
+      updateSession({
+        loading: false,
+        pendingQuestion: ''
+      })
     }
   }
 
@@ -61,6 +78,16 @@ function AgentView() {
     if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
       submitQuestion(event)
     }
+  }
+
+  if (selectedReference) {
+    return (
+      <ReferenceDetail
+        reference={selectedReference}
+        backLabel={getReferenceBackLabel('agent')}
+        onBack={() => updateSession({ selectedReference: null })}
+      />
+    )
   }
 
   return (
@@ -112,8 +139,13 @@ function AgentView() {
               </div>
 
               <div className="agent-answer">
-                <span>RESEARCH RESPONSE</span>
-                <p>{exchange.answer}</p>
+                <AgentResponse
+                  answer={exchange.answer}
+                  onOpenReference={(reference) => {
+                    updateSession({ selectedReference: reference })
+                  }}
+                  userId={userId}
+                />
               </div>
             </article>
           ))
@@ -158,7 +190,7 @@ function AgentView() {
           value={question}
           maxLength={4000}
           placeholder="What connections have I found between..."
-          onChange={(event) => setQuestion(event.target.value)}
+          onChange={(event) => updateSession({ question: event.target.value })}
           onKeyDown={handleQuestionKeyDown}
           disabled={loading}
         />

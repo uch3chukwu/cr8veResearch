@@ -4,12 +4,14 @@ import AgentView from './components/AgentView'
 import Auth from './components/Auth'
 import ResearchSpaces from './components/ResearchSpaces'
 import References from './components/References'
+import { createAgentSession } from './lib/agent-session'
 
 function App() {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const [selectedSpace, setSelectedSpace] = useState(null)
   const [activeView, setActiveView] = useState('research')
+  const [agentSession, setAgentSession] = useState(createAgentSession)
 
   useEffect(function () {
     let isActive = true
@@ -31,6 +33,7 @@ function App() {
 
         if (!session) {
           setSelectedSpace(null)
+          setAgentSession(createAgentSession())
           setActiveView('research')
         }
       }
@@ -51,6 +54,7 @@ function App() {
     }
   
     setSelectedSpace(null)
+    setAgentSession(createAgentSession())
     setActiveView('research')
   }
 
@@ -65,7 +69,13 @@ function App() {
   let content
 
   if (activeView === 'agent') {
-    content = <AgentView />
+    content = (
+      <AgentView
+        session={agentSession}
+        setSession={setAgentSession}
+        userId={user.id}
+      />
+    )
   } else if (selectedSpace) {
     content = (
       <References
