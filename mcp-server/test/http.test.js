@@ -95,6 +95,18 @@ function createHandler({
   return { handler, supabaseFactory, errors }
 }
 
+test('returns a production health check without authentication', async () => {
+  const { handler } = createHandler()
+  const response = await request(handler, {
+    method: 'GET',
+    path: '/health',
+    authorization: null
+  })
+
+  assert.equal(response.status, 200)
+  assert.deepEqual(response.body, { status: 'ok' })
+})
+
 test('returns an agent answer for a valid authenticated request', async () => {
   const modelCalls = []
   const model = {
@@ -278,6 +290,26 @@ test('preserves MCP Bearer authentication', async () => {
 
   assert.equal(response.status, 401)
   assert.deepEqual(response.body, { error: 'Bearer authorization required' })
+  assert.equal(calls, 0)
+})
+
+test('rejects an invalid MCP Bearer token before protocol handling', async () => {
+  let calls = 0
+  const { handler } = createHandler({
+    authenticated: false,
+    handleMcpRequest() {
+      calls += 1
+    }
+  })
+
+  const response = await request(handler, {
+    path: '/mcp',
+    body: { jsonrpc: '2.0' }
+  })
+
+  assert.equal(response.status, 401)
+  assert.deepEqual(response.body, { error: 'Authentication failed' })
+  assert.equal(response.headers.get('www-authenticate'), 'Bearer')
   assert.equal(calls, 0)
 })
 

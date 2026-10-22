@@ -18,4 +18,10 @@ export default defineConfig([
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
   },
+  {
+    files: ['mcp-server/**/*.js', 'test/**/*.js'],
+    languageOptions: {
+      globals: globals.node,
+    },
+  },
 ])

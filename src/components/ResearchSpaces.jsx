@@ -16,31 +16,31 @@ function ResearchSpaces({ user, onSelectSpace }) {
     useState(false)
 
   useEffect(function () {
-    loadSpaces()
-  }, [user.id])
+    async function loadSpaces() {
+      setLoading(true)
+      setMessage('')
 
-  async function loadSpaces() {
-    setLoading(true)
-    setMessage('')
+      const {
+        data,
+        error
+      } = await supabase
+        .from('research_spaces')
+        .select('*')
+        .order('created_at', {
+          ascending: false
+        })
 
-    const {
-      data,
-      error
-    } = await supabase
-      .from('research_spaces')
-      .select('*')
-      .order('created_at', {
-        ascending: false
-      })
+      if (error) {
+        setMessage(error.message)
+      } else {
+        setSpaces(data ?? [])
+      }
 
-    if (error) {
-      setMessage(error.message)
-    } else {
-      setSpaces(data ?? [])
+      setLoading(false)
     }
 
-    setLoading(false)
-  }
+    loadSpaces()
+  }, [user.id])
 
   async function createSpace(event) {
     event.preventDefault()

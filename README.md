@@ -73,3 +73,10 @@ npm run dev
 cd mcp-server
 npm run dev
 ```
+
+## Production deployment
+
+The repository includes a Render Blueprint for a public HTTPS Node MCP server
+and a static Vite frontend. See [DEPLOYMENT.md](DEPLOYMENT.md) for the exact
+Windows deployment checklist, environment variable names, health check, and
+post-deployment verification steps.

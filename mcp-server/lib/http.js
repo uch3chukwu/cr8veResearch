@@ -48,6 +48,11 @@ async function readJsonBody(req) {
 export function createHttpRequestHandler({
   handleMcpRequest,
   createSupabaseClient,
+  authenticateMcpRequest = async (accessToken) => {
+    const supabase = createSupabaseClient(accessToken)
+    const { data, error } = await supabase.auth.getUser()
+    return !error && Boolean(data.user)
+  },
   createModel = createResearchModel,
   runAgent = runResearchAgent,
   allowedAgentOrigin = globalThis.process?.env.AGENT_ALLOWED_ORIGIN ||
@@ -55,8 +60,15 @@ export function createHttpRequestHandler({
   logger = console
 }) {
   return async function handleHttpRequest(req, res) {
+    if (req.url === '/health' && req.method === 'GET') {
+      sendJson(res, 200, { status: 'ok' })
+      return
+    }
+
     if (req.url?.startsWith('/mcp')) {
-      if (!getBearerToken(req.headers.authorization)) {
+      const accessToken = getBearerToken(req.headers.authorization)
+
+      if (!accessToken) {
         sendJson(
           res,
           401,
@@ -66,7 +78,27 @@ export function createHttpRequestHandler({
         return
       }
 
-      handleMcpRequest(req, res)
+      try {
+        if (!await authenticateMcpRequest(accessToken)) {
+          sendJson(
+            res,
+            401,
+            { error: 'Authentication failed' },
+            { 'WWW-Authenticate': 'Bearer' }
+          )
+          return
+        }
+      } catch {
+        sendJson(
+          res,
+          401,
+          { error: 'Authentication failed' },
+          { 'WWW-Authenticate': 'Bearer' }
+        )
+        return
+      }
+
+      await handleMcpRequest(req, res)
       return
     }
 

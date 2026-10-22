@@ -22,45 +22,45 @@ function References({ user, space, onBack }) {
     useState(false)
 
   useEffect(function () {
-    loadReferences()
-  }, [space.id])
+    async function loadReferences() {
+      setLoading(true)
+      setMessage('')
 
-  async function loadReferences() {
-    setLoading(true)
-    setMessage('')
-
-    const {
-      data,
-      error
-    } = await supabase
-      .from('references')
-      .select(`
-        id,
-        user_id,
-        title,
-        description,
-        created_at,
-        updated_at,
-        reference_spaces!inner (
-          research_space_id
+      const {
+        data,
+        error
+      } = await supabase
+        .from('references')
+        .select(`
+          id,
+          user_id,
+          title,
+          description,
+          created_at,
+          updated_at,
+          reference_spaces!inner (
+            research_space_id
+          )
+        `)
+        .eq(
+          'reference_spaces.research_space_id',
+          space.id
         )
-      `)
-      .eq(
-        'reference_spaces.research_space_id',
-        space.id
-      )
-      .order('created_at', {
-        ascending: false
-      })
+        .order('created_at', {
+          ascending: false
+        })
 
-    if (error) {
-      setMessage(error.message)
-    } else {
-      setReferences(data ?? [])
+      if (error) {
+        setMessage(error.message)
+      } else {
+        setReferences(data ?? [])
+      }
+
+      setLoading(false)
     }
 
-    setLoading(false)
-  }
+    loadReferences()
+  }, [space.id])
 
   async function createReference(event) {
     event.preventDefault()
@@ -381,8 +381,7 @@ function References({ user, space, onBack }) {
         ) : (
           filteredReferences.map(
             function (
-              reference,
-              index
+              reference
             ) {
               return (
                 <article

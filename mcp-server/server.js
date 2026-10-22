@@ -1,4 +1,5 @@
 import { createServer } from 'node:http'
+import { pathToFileURL } from 'node:url'
 import { McpServer, createMcpHandler } from '@modelcontextprotocol/server'
 import { toNodeHandler } from '@modelcontextprotocol/node'
 import { z } from 'zod'
@@ -12,7 +13,7 @@ import { createUserSupabaseClient } from './lib/supabase.js'
 
 const PORT = globalThis.process.env.PORT || 3001
 
-function getBearerToken(authorization) {
+export function getBearerToken(authorization) {
   if (typeof authorization !== 'string') {
     return null
   }
@@ -130,7 +131,7 @@ async function runResearchSearch(supabase, query, limit) {
   }
 }
 
-function createMcpServer(supabase) {
+export function createMcpServer(supabase) {
   const server = new McpServer({
     name: 'cr8veResearch',
     version: '0.1.0'
@@ -201,26 +202,36 @@ function createMcpServer(supabase) {
   return server
 }
 
-const mcpHandler = createMcpHandler(({ requestInfo }) => {
-  const accessToken = getBearerToken(
-    requestInfo?.headers.get('authorization')
-  )
+export function createMcpRequestHandler() {
+  const mcpHandler = createMcpHandler(({ requestInfo }) => {
+    const accessToken = getBearerToken(
+      requestInfo?.headers.get('authorization')
+    )
 
-  if (!accessToken) {
-    throw new Error('Authenticated MCP request is missing a Bearer token')
-  }
+    if (!accessToken) {
+      throw new Error('Authenticated MCP request is missing a Bearer token')
+    }
 
-  return createMcpServer(createUserSupabaseClient(accessToken))
-})
-const handleMcpRequest = toNodeHandler(mcpHandler)
+    return createMcpServer(createUserSupabaseClient(accessToken))
+  })
+  return toNodeHandler(mcpHandler)
+}
 
-const httpServer = createServer(createHttpRequestHandler({
-  handleMcpRequest,
-  createSupabaseClient: createUserSupabaseClient,
-  createModel: createResearchModel
-}))
+export function startServer({ port = PORT, host = '0.0.0.0' } = {}) {
+  const httpServer = createServer(createHttpRequestHandler({
+    handleMcpRequest: createMcpRequestHandler(),
+    createSupabaseClient: createUserSupabaseClient,
+    createModel: createResearchModel
+  }))
 
-httpServer.listen(PORT, () => {
-  console.log(`cr8veResearch MCP running on http://localhost:${PORT}`)
-  console.log(`MCP endpoint: http://localhost:${PORT}/mcp`)
-})
+  httpServer.listen(port, host, () => {
+    console.log(`cr8veResearch MCP listening on ${host}:${port}`)
+    console.log('MCP endpoint: /mcp')
+  })
+
+  return httpServer
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  startServer()
+}

@@ -70,97 +70,97 @@ function ReferenceDetail({
   ] = useState('note')
 
   useEffect(function () {
-    loadReferenceData()
-  }, [reference.id])
+    async function loadReferenceData() {
+      setLoading(true)
+      setMessage('')
 
-  async function loadReferenceData() {
-    setLoading(true)
-    setMessage('')
-
-    const [
-      mediaResult,
-      sourceResult,
-      noteResult
-    ] = await Promise.all([
-      supabase
-        .from('reference_media')
-        .select('*')
-        .eq(
-          'reference_id',
-          reference.id
-        )
-        .order('position', {
-          ascending: true
-        })
-        .order('created_at', {
-          ascending: true
-        }),
-
-      supabase
-        .from('reference_sources')
-        .select(`
-          source_id,
-          created_at,
-          sources (
-            id,
-            user_id,
-            title,
-            source_type,
-            creator,
-            url,
-            description
+      const [
+        mediaResult,
+        sourceResult,
+        noteResult
+      ] = await Promise.all([
+        supabase
+          .from('reference_media')
+          .select('*')
+          .eq(
+            'reference_id',
+            reference.id
           )
-        `)
-        .eq(
-          'reference_id',
-          reference.id
-        )
-        .order('created_at', {
-          ascending: true
-        }),
-
-      supabase
-        .from('notes')
-        .select('*')
-        .eq(
-          'reference_id',
-          reference.id
-        )
-        .order('created_at', {
-          ascending: false
-        })
-    ])
-
-    const errors = [
-      mediaResult.error,
-      sourceResult.error,
-      noteResult.error
-    ].filter(Boolean)
-
-    if (errors.length > 0) {
-      setMessage(
-        errors
-          .map(function (error) {
-            return error.message
+          .order('position', {
+            ascending: true
           })
-          .join(' | ')
+          .order('created_at', {
+            ascending: true
+          }),
+
+        supabase
+          .from('reference_sources')
+          .select(`
+            source_id,
+            created_at,
+            sources (
+              id,
+              user_id,
+              title,
+              source_type,
+              creator,
+              url,
+              description
+            )
+          `)
+          .eq(
+            'reference_id',
+            reference.id
+          )
+          .order('created_at', {
+            ascending: true
+          }),
+
+        supabase
+          .from('notes')
+          .select('*')
+          .eq(
+            'reference_id',
+            reference.id
+          )
+          .order('created_at', {
+            ascending: false
+          })
+      ])
+
+      const errors = [
+        mediaResult.error,
+        sourceResult.error,
+        noteResult.error
+      ].filter(Boolean)
+
+      if (errors.length > 0) {
+        setMessage(
+          errors
+            .map(function (error) {
+              return error.message
+            })
+            .join(' | ')
+        )
+      }
+
+      setMedia(
+        mediaResult.data ?? []
       )
+
+      setSources(
+        sourceResult.data ?? []
+      )
+
+      setNotes(
+        noteResult.data ?? []
+      )
+
+      setLoading(false)
     }
 
-    setMedia(
-      mediaResult.data ?? []
-    )
-
-    setSources(
-      sourceResult.data ?? []
-    )
-
-    setNotes(
-      noteResult.data ?? []
-    )
-
-    setLoading(false)
-  }
+    loadReferenceData()
+  }, [reference.id])
 
   async function createMedia(event) {
     event.preventDefault()

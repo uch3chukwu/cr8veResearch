@@ -3,12 +3,19 @@
   "version": "0.1.0",
   "description": "MCP server for cr8veResearch",
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "node --watch server.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --test",
+    "test:mcp": "node --test test/mcp-client.test.js",
+    "test:mcp:live": "node client/external-client.js"
   },
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.1142.0",
+    "@modelcontextprotocol/client": "^2.3.1",
     "@modelcontextprotocol/node": "^2.0.0",
     "@modelcontextprotocol/server": "^2.0.0",
     "@supabase/supabase-js": "^2.0.0",
