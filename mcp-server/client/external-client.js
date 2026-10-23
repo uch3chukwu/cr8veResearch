@@ -14,12 +14,13 @@ const expectedReferenceTitle = process.env.MCP_EXPECT_REFERENCE_TITLE
 const minimumProtocolVersion = '2025-11-25'
 const diagnosticsEnabled = process.env.MCP_DIAGNOSTICS === '1'
 
-function logConnectionDiagnostics(error) {
+function logConnectionDiagnostics(stage, error, details = {}) {
   if (diagnosticsEnabled) {
-    console.error('Safe MCP authentication diagnostics:', {
-      stage: 'initialize',
+    console.error('Safe MCP verification diagnostics:', {
+      stage,
       errorName: error?.name ?? 'UnknownError',
-      unauthorized: error?.name === 'UnauthorizedError'
+      unauthorized: error?.name === 'UnauthorizedError',
+      ...details
     })
   }
 }
@@ -46,10 +47,13 @@ if (
   })
 
   let connected = false
+  let stage = 'initialize'
+  let searchDiagnostics = {}
 
   try {
     await client.connect(transport)
     connected = true
+    stage = 'protocol_negotiation'
     const negotiatedProtocolVersion = client.getNegotiatedProtocolVersion()
     assert.match(
       negotiatedProtocolVersion ?? '',
@@ -61,6 +65,7 @@ if (
       `MCP protocol ${minimumProtocolVersion} or later is required`
     )
 
+    stage = 'tool_discovery'
     const { tools } = await client.listTools()
     const toolNames = new Set(tools.map(({ name }) => name))
 
@@ -73,29 +78,41 @@ if (
       assert(toolNames.has(requiredTool), `Missing required tool: ${requiredTool}`)
     }
 
+    stage = 'ping'
     const ping = await client.callTool({ name: 'ping', arguments: {} })
     assert.equal(ping.isError, undefined)
     assert.match(ping.content?.[0]?.text ?? '', /online/i)
 
+    stage = 'search_research'
     const search = await client.callTool({
       name: 'search_research',
       arguments: { query: searchQuery }
     })
     assert.equal(search.isError, undefined)
 
+    const searchResults = search.structuredContent?.results
+    const matchingSearchResult = Array.isArray(searchResults)
+      ? searchResults.find((result) => result.reference_id === expectedReferenceId)
+      : undefined
+    searchDiagnostics = {
+      searchResultsArray: Array.isArray(searchResults),
+      searchResultCount: Array.isArray(searchResults) ? searchResults.length : null,
+      expectedReferenceFound: Boolean(matchingSearchResult)
+    }
+
+    stage = 'get_reference'
     const reference = await client.callTool({
       name: 'get_reference',
       arguments: { reference_id: expectedReferenceId }
     })
 
-    const matchingSearchResult = (search.structuredContent?.results ?? []).find(
-      (result) => result.reference_id === expectedReferenceId
-    )
+    stage = 'search_result_assertion'
     assert(
       matchingSearchResult,
       'The unique search query did not return the expected reference ID'
     )
 
+    stage = 'reference_assertion'
     assert.equal(reference.isError, undefined)
     assert.equal(
       reference.structuredContent?.reference?.id,
@@ -108,6 +125,7 @@ if (
       'get_reference returned an unexpected reference title'
     )
 
+    stage = 'create_note'
     const noteMarker = `MCP live verification ${new Date().toISOString()}`
     const createdNote = await client.callTool({
       name: 'create_note',
@@ -126,6 +144,7 @@ if (
       'create_note did not return a note UUID'
     )
 
+    stage = 'note_persistence'
     const updatedReference = await client.callTool({
       name: 'get_reference',
       arguments: { reference_id: expectedReferenceId }
@@ -145,7 +164,7 @@ if (
       'reference, and created and retrieved a persisted note.'
     )
   } catch (error) {
-    logConnectionDiagnostics(error)
+    logConnectionDiagnostics(stage, error, searchDiagnostics)
     throw error
   } finally {
     if (connected) {

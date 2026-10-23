@@ -59,3 +59,54 @@ verifies that a derived invalid credential is rejected. A live pass requires
 valid Supabase configuration, a current user access token, and an existing
 reference whose ID, exact title, and uniquely identifying search text are
 known. It never prints those inputs or the token.
+
+## Public Render verification
+
+Use this only after placing a fresh Supabase **user access token** in
+`MCP_ACCESS_TOKEN` in the current CMD process. The token stays in that local
+process; do not paste it into this file, Git, Devpost, or chat.
+
+First validate that the configured token belongs to the same Supabase project
+as the frontend:
+
+```cmd
+cd /d C:\Users\User\Desktop\cr8veResearch\mcp-server
+npm run test:frontend-token
+```
+
+Only after that command prints `PASS: token_valid_for_frontend_supabase`, set
+the public endpoint and the existing non-sensitive reference fixtures. Confirm
+that the authenticated user can read the fixture and that the unique query
+returns it before running the complete external-client verification:
+
+```cmd
+set "MCP_URL=https://cr8veresearch-mcp.onrender.com/mcp"
+set "MCP_SEARCH_QUERY=<UNIQUE_USER_RESEARCH_TEXT>"
+set "MCP_EXPECT_REFERENCE_ID=<EXPECTED_REFERENCE_ID>"
+set "MCP_DIAGNOSTICS=1"
+npm run test:live-fixture
+```
+
+On success, the inspector prints the exact `MCP_EXPECT_REFERENCE_TITLE` value
+for the authenticated user's accessible fixture. Set that value, then run the
+complete external-client verification:
+
+```cmd
+set "MCP_EXPECT_REFERENCE_TITLE=<EXACT_TITLE_PRINTED_BY_THE_FIXTURE_INSPECTOR>"
+set "MCP_DIAGNOSTICS=1"
+npm run test:mcp:live
+```
+
+The test creates one timestamped note on the selected reference, so choose a
+dedicated non-sensitive test reference. A failed initialization prints only
+the safe error category; it never prints token material, claims, configuration
+values, or research content. The fixture inspector prints only the reference
+title needed by the live test. Clear the local values after the run:
+
+```cmd
+set MCP_ACCESS_TOKEN=
+set MCP_SEARCH_QUERY=
+set MCP_EXPECT_REFERENCE_ID=
+set MCP_EXPECT_REFERENCE_TITLE=
+set MCP_DIAGNOSTICS=
+```

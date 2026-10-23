@@ -23,6 +23,24 @@ cr8veResearch helps artists, writers, musicians, designers, and other creatives 
 - JavaScript
 - Supabase
 - PostgreSQL
+- Model Context Protocol (MCP) over Streamable HTTP
+
+## Alexa+ hackathon implementation
+
+The project includes a self-hosted MCP server at `POST /mcp`. It uses
+Streamable HTTP, negotiates MCP protocol `2025-11-25` or later, requires a
+Supabase user access token, and keeps each tool request inside the user's
+existing Supabase Row Level Security boundary.
+
+Available MCP tools: `ping`, `search_research`, `get_reference`,
+`get_research_space`, and `create_note`.
+
+The local integration suite verifies protocol negotiation, discovery, tool
+invocation, invalid-token rejection, and user-scoped persistence. The deployed
+public endpoint has also passed authenticated end-to-end verification with a
+Supabase user token: it negotiated MCP `2025-11-25`, discovered five tools,
+searched and retrieved the expected user-scoped reference, created and
+retrieved a verification note, and rejected invalid credentials.
 
 ## Direction
 
@@ -80,3 +98,14 @@ The repository includes a Render Blueprint for a public HTTPS Node MCP server
 and a static Vite frontend. See [DEPLOYMENT.md](DEPLOYMENT.md) for the exact
 Windows deployment checklist, environment variable names, health check, and
 post-deployment verification steps.
+
+## Hackathon submission materials
+
+See [HACKATHON_SUBMISSION.md](HACKATHON_SUBMISSION.md) for a truthful Devpost
+project description, required product feedback, a three-minute demo script,
+and the final submission checklist. The external MCP test procedure is in
+[mcp-server/EXTERNAL_MCP.md](mcp-server/EXTERNAL_MCP.md).
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
