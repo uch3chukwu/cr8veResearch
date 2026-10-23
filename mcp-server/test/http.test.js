@@ -313,6 +313,37 @@ test('rejects an invalid MCP Bearer token before protocol handling', async () =>
   assert.equal(calls, 0)
 })
 
+test('logs only safe metadata when MCP authentication is rejected', async () => {
+  const warnings = []
+  const handlerWithLogger = createHttpRequestHandler({
+    handleMcpRequest() {
+      throw new Error('MCP handler must not run')
+    },
+    createSupabaseClient: createSupabaseFactory({ authenticated: false })
+      .createSupabaseClient,
+    logger: {
+      warn(message, metadata) {
+        warnings.push({ message, metadata })
+      },
+      error() {}
+    }
+  })
+
+  const response = await request(handlerWithLogger, {
+    path: '/mcp',
+    body: { jsonrpc: '2.0' }
+  })
+
+  assert.equal(response.status, 401)
+  assert.deepEqual(warnings, [{
+    message: 'MCP authentication rejected',
+    metadata: {
+      reason: 'supabase_auth_error',
+      status: null
+    }
+  }])
+})
+
 test('allows CORS preflight from the configured frontend origin', async () => {
   const { handler } = createHandler()
   const response = await request(handler, {

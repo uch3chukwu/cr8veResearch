@@ -51,7 +51,20 @@ export function createHttpRequestHandler({
   authenticateMcpRequest = async (accessToken) => {
     const supabase = createSupabaseClient(accessToken)
     const { data, error } = await supabase.auth.getUser()
-    return !error && Boolean(data.user)
+
+    if (error) {
+      return {
+        authenticated: false,
+        reason: 'supabase_auth_error',
+        status: typeof error.status === 'number' ? error.status : null
+      }
+    }
+
+    return {
+      authenticated: Boolean(data.user),
+      reason: data.user ? null : 'supabase_user_missing',
+      status: null
+    }
   },
   createModel = createResearchModel,
   runAgent = runResearchAgent,
@@ -79,7 +92,20 @@ export function createHttpRequestHandler({
       }
 
       try {
-        if (!await authenticateMcpRequest(accessToken)) {
+        const authentication = await authenticateMcpRequest(accessToken)
+        const authenticated = typeof authentication === 'boolean'
+          ? authentication
+          : authentication.authenticated
+
+        if (!authenticated) {
+          logger.warn?.('MCP authentication rejected', {
+            reason: typeof authentication === 'boolean'
+              ? 'authentication_failed'
+              : authentication.reason,
+            status: typeof authentication === 'boolean'
+              ? null
+              : authentication.status
+          })
           sendJson(
             res,
             401,
@@ -89,6 +115,10 @@ export function createHttpRequestHandler({
           return
         }
       } catch {
+        logger.warn?.('MCP authentication rejected', {
+          reason: 'supabase_auth_exception',
+          status: null
+        })
         sendJson(
           res,
           401,

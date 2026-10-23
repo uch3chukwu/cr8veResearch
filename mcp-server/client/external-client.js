@@ -12,6 +12,17 @@ const expectedReferenceId = process.env.MCP_EXPECT_REFERENCE_ID ||
   process.env.MCP_EXPECT_RESULT_ID
 const expectedReferenceTitle = process.env.MCP_EXPECT_REFERENCE_TITLE
 const minimumProtocolVersion = '2025-11-25'
+const diagnosticsEnabled = process.env.MCP_DIAGNOSTICS === '1'
+
+function logConnectionDiagnostics(error) {
+  if (diagnosticsEnabled) {
+    console.error('Safe MCP authentication diagnostics:', {
+      stage: 'initialize',
+      errorName: error?.name ?? 'UnknownError',
+      unauthorized: error?.name === 'UnauthorizedError'
+    })
+  }
+}
 
 if (
   !accessToken ||
@@ -34,8 +45,11 @@ if (
     authProvider: { token: async () => accessToken }
   })
 
+  let connected = false
+
   try {
     await client.connect(transport)
+    connected = true
     const negotiatedProtocolVersion = client.getNegotiatedProtocolVersion()
     assert.match(
       negotiatedProtocolVersion ?? '',
@@ -69,6 +83,11 @@ if (
     })
     assert.equal(search.isError, undefined)
 
+    const reference = await client.callTool({
+      name: 'get_reference',
+      arguments: { reference_id: expectedReferenceId }
+    })
+
     const matchingSearchResult = (search.structuredContent?.results ?? []).find(
       (result) => result.reference_id === expectedReferenceId
     )
@@ -77,10 +96,6 @@ if (
       'The unique search query did not return the expected reference ID'
     )
 
-    const reference = await client.callTool({
-      name: 'get_reference',
-      arguments: { reference_id: expectedReferenceId }
-    })
     assert.equal(reference.isError, undefined)
     assert.equal(
       reference.structuredContent?.reference?.id,
@@ -129,8 +144,13 @@ if (
       `discovered ${tools.length} tools, searched, loaded the expected ` +
       'reference, and created and retrieved a persisted note.'
     )
+  } catch (error) {
+    logConnectionDiagnostics(error)
+    throw error
   } finally {
-    await client.close().catch(() => {})
+    if (connected) {
+      await client.close().catch(() => {})
+    }
   }
 
   const invalidClient = new Client({
@@ -141,10 +161,17 @@ if (
     new URL(endpoint),
     { authProvider: { token: async () => `${accessToken}-invalid` } }
   )
+  let invalidClientConnected = false
+
   try {
-    await assert.rejects(invalidClient.connect(invalidTransport))
+    await assert.rejects(async () => {
+      await invalidClient.connect(invalidTransport)
+      invalidClientConnected = true
+    })
     console.log('MCP live test passed: invalid credentials were rejected.')
   } finally {
-    await invalidClient.close().catch(() => {})
+    if (invalidClientConnected) {
+      await invalidClient.close().catch(() => {})
+    }
   }
 }
